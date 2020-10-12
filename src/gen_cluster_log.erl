@@ -10,8 +10,8 @@ build_logs(Logs) ->
     try
         build_logs(Logs, [], [])
     catch
-        _:Err ->
-            {"crashed in "?MODULE_STRING": ~1000p: ~1000p", [Err, erlang:get_stacktrace()]}
+        _:Err:Stacktrace ->
+            {"crashed in "?MODULE_STRING": ~1000p: ~1000p", [Err, Stacktrace]}
     end.
 
 build_logs([{Atom, Str} | Rest], Fmt, Params)
