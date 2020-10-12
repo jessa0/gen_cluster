@@ -8,6 +8,8 @@
 -callback dispatch_cast(Msg :: any(),
                         Group :: gen_client:group_name()) -> _Ignore.
 
+-include_lib("kernel/include/logger.hrl").
+
 %% public api
 -export([start_link/3,
          child_spec/3]).
@@ -55,7 +57,7 @@ child_spec(Name, Mod, Opts) ->
 %%
 
 init({Group, Mod}) ->
-    error_logger:info_msg(?MODULE_STRING" ~p starting on node ~p", [Group, node()]),
+    ?LOG_INFO(?MODULE_STRING" ~p starting on node ~p", [Group, node()]),
     State = #state{
                group = Group,
                mod = Mod
@@ -82,7 +84,7 @@ handle_info(_Msg, State) ->
     {noreply, State}.
 
 terminate(Reason, State) ->
-    error_logger:info_msg(?MODULE_STRING" ~p stopping on node ~p: ~p", [State#state.group, node(), Reason]),
+    ?LOG_INFO(?MODULE_STRING" ~p stopping on node ~p: ~p", [State#state.group, node(), Reason]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->

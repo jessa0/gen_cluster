@@ -7,6 +7,8 @@
 %% gen_event
 -export([init/1, handle_call/2, handle_event/2, handle_info/2, terminate/2, code_change/3]).
 
+-include_lib("kernel/include/logger.hrl").
+
 %%
 %% api
 %%
@@ -40,14 +42,14 @@ handle_event({set_alarm, {system_memory_high_watermark, []}}, State) ->
     TotalMB = Total div (1024*1024),
     AllocMB = Alloc div (1024*1024),
     AllocPct = round((Alloc / Total) * 100),
-    error_logger:warning_msg("system high memory usage: ~BMB/~BMB (~B%)", [TotalMB, AllocMB, AllocPct]),
+    ?LOG_WARNING("system high memory usage: ~BMB/~BMB (~B%)", [TotalMB, AllocMB, AllocPct]),
     {ok, State};
 handle_event({set_alarm, {process_memory_high_watermark, Pid}}, State) ->
     {Total, _Alloc, Worst} = memsup:get_memory_data(),
     TotalMB = Total div (1024*1024),
     WorstMB = Worst div (1024*1024),
     WorstPct = round((Worst / Total) * 100),
-    error_logger:warning_msg("process high memory usage: ~p: ~BMB/~BMB (~B%)", [Pid, TotalMB, WorstMB, WorstPct]),
+    ?LOG_WARNING("process high memory usage: ~p: ~BMB/~BMB (~B%)", [Pid, TotalMB, WorstMB, WorstPct]),
     {ok, State};
 
 %%
@@ -59,9 +61,9 @@ handle_event({set_alarm, {{disk_almost_full, MountedOn}, []}}, State) ->
         {MountedOn, TotalKB, UsedPct} ->
             TotalMB = TotalKB div 1024,
             UsedMB = TotalKB * UsedPct div (100 * 1024),
-            error_logger:warning_msg("disk almost full: ~s: ~BMB/~BMB (~B%)", [MountedOn, TotalMB, UsedMB, UsedPct]);
+            ?LOG_WARNING("disk almost full: ~s: ~BMB/~BMB (~B%)", [MountedOn, TotalMB, UsedMB, UsedPct]);
         false ->
-            error_logger:warning_msg("disk almost full: ~s", [MountedOn])
+            ?LOG_WARNING("disk almost full: ~s", [MountedOn])
     end,
     {ok, State};
 
@@ -69,37 +71,37 @@ handle_event({set_alarm, {{disk_almost_full, MountedOn}, []}}, State) ->
 %% mnesia
 %%
 
-handle_event({mnesia_system_event, {mnesia_up, _Node}=Event}, State) ->
-    error_logger:info_report([Event]),
+handle_event({mnesia_system_event, {mnesia_up, Node}}, State) ->
+    ?LOG_INFO("mnesia_up: ~p", [Node]),
     {ok, State};
-handle_event({mnesia_system_event, {mnesia_down, _Node}=Event}, State) ->
-    error_logger:info_report([Event]),
+handle_event({mnesia_system_event, {mnesia_down, Node}}, State) ->
+    ?LOG_INFO("mnesia_down: ~p", [Node]),
     {ok, State};
 handle_event({mnesia_system_event, {mnesia_checkpoint_activated, _Checkpoint}}, State) ->
     {ok, State};
 handle_event({mnesia_system_event, {mnesia_checkpoint_deactivated, _Checkpoint}}, State) ->
     {ok, State};
-handle_event({mnesia_system_event, {mnesia_overload, _Details}=Event}, State) ->
-    error_logger:info_report([Event]),
+handle_event({mnesia_system_event, {mnesia_overload, Details}}, State) ->
+    ?LOG_INFO("mnesia_overload: ~p", [Details]),
     {ok, State};
 handle_event({mnesia_system_event, {inconsistent_database, Reason, Node}}, State) ->
-    error_logger:info_report([{inconsistent_database, Reason}, {node, Node}]),
+    ?LOG_INFO("mnesia inconsistent_database on ~p: ~p", [Node, Reason]),
     {ok, State};
 handle_event({mnesia_system_event, {mnesia_fatal, Format, Args, _BinCore}}, State) ->
-    error_logger:error_msg("mnesia_fatal: "++Format, Args),
+    ?LOG_ERROR("mnesia_fatal: "++Format, Args),
     {ok, State};
 handle_event({mnesia_system_event, {mnesia_error, Format, Args}}, State) ->
-    error_logger:error_msg("mnesia_error: "++Format, Args),
+    ?LOG_ERROR("mnesia_error: "++Format, Args),
     {ok, State};
 handle_event({mnesia_system_event, {mnesia_info, _Format, _Args}}, State) ->
     {ok, State};
 handle_event({mnesia_system_event, _MnesiaEvent}=Event, State) ->
-    error_logger:warning_report([Event]),
+    ?LOG_WARNING("mnesia_system_event: ~p", [Event]),
     {ok, State};
 handle_event({mnesia_table_event, _}, State) ->
     {ok, State};
 handle_event(Event, State) ->
-    error_logger:warning_report([Event]),
+    ?LOG_WARNING("~p", [Event]),
     {ok, State}.
 
 %%
@@ -111,7 +113,7 @@ handle_info({nodeup, _Node, _InfoList}, State) ->
 handle_info({nodedown, Node, InfoList}, State) ->
     case lists:keyfind(nodedown_reason, 1, InfoList) of
         {nodedown_reason, Reason} ->
-            error_logger:warning_report([{nodedown, Node}, {reason, Reason}]);
+            ?LOG_WARNING("nodedown ~p: ~p", [Node, Reason]);
         false ->
             ok
     end,
@@ -122,16 +124,16 @@ handle_info({nodedown, Node, InfoList}, State) ->
 %%
 
 handle_info({monitor, GcPid, long_gc, Info}, State) ->
-    error_logger:warning_report([{long_gc, Info}, {pid, GcPid}]),
+    ?LOG_WARNING("long_gc on pid ~p: ~p", [GcPid, Info]),
     {ok, State};
 handle_info({monitor, PidOrPort, long_schedule, Info}, State) ->
-    error_logger:warning_report([{long_schedule, Info}, {pid, PidOrPort}]),
+    ?LOG_WARNING("long_schedule on pid ~p: ~p", [PidOrPort, Info]),
     {ok, State};
 handle_info({monitor, SusPid, busy_port, Port}, State) ->
-    error_logger:warning_report([{busy_port, Port}, {pid, SusPid}]),
+    ?LOG_WARNING("busy_port ~p on pid ~p", [Port, SusPid]),
     {ok, State};
 handle_info({monitor, _SusPid, busy_dist_port, Port}, State) ->
-    error_logger:warning_report([{busy_dist_port, Port}]),
+    ?LOG_WARNING("busy_dist_port: ~p", [Port]),
     {ok, State};
 
 handle_info(_Msg, State) ->

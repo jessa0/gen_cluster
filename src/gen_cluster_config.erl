@@ -1,5 +1,7 @@
 -module(gen_cluster_config).
 
+-include_lib("kernel/include/logger.hrl").
+
 -export([get_opts/2,
          reload_sys/0]).
 
@@ -65,13 +67,12 @@ reload_sys() ->
                                       AppEnvDiff -> [{App, AppEnvDiff}]
                                   end
                           end, Appls),
-                    error_logger:warning_report([{"sys.config reloaded", EnvDiff}]),
+                    ?LOG_WARNING("sys.config reloaded: ~p", [EnvDiff]),
                     case application_controller:config_change(EnvBefore) of
                         ok ->
                             {ok, EnvDiff};
                         {error, ConfigChangeErrs} ->
-                            error_logger:error_report([{"sys.config reloaded", EnvDiff},
-                                                       {"with config_change errors", ConfigChangeErrs}]),
+                            ?LOG_ERROR("error reloading sys.config: ~p: ~p", [EnvDiff, ConfigChangeErrs]),
                             {error, {config_change, EnvDiff, ConfigChangeErrs}}
                     end;
                 {ok, []} ->

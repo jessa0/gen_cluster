@@ -1,5 +1,7 @@
 -module(gen_cluster_code).
 
+-include_lib("kernel/include/logger.hrl").
+
 -export([changed/0,
          is_changed/1,
          load_all/0,
@@ -33,10 +35,10 @@ load_all() ->
     [code:purge(Mod) || Mod <- Mods],
     case code:atomic_load(Mods) of
         ok ->
-            error_logger:warning_report([{"code reloaded", Mods}]),
+            ?LOG_WARNING("code reloaded: ~p", [Mods]),
             {ok, Mods};
         {error, Errs} ->
-            error_logger:warning_report([{"code reloaded", Mods}, {"with errors", Errs}]),
+            ?LOG_WARNING("error reloading code: ~p: ~p", [Mods, Errs]),
             {error, Errs}
     end.
 

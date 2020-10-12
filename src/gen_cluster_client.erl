@@ -1,5 +1,7 @@
 -module(gen_cluster_client).
 
+-include_lib("kernel/include/logger.hrl").
+
 %% public api: gen_server equivalents without monitors
 -export([call/2, call/3, cast/2]).
 
@@ -56,8 +58,7 @@ register_name({Service, IslandNo, Role}=Group, Pid) ->
             try
                 ok = pg2:create(Group),
                 ok = pg2:join(Group, Pid),
-                error_logger:info_msg("node ~s pid ~p joined service ~s island ~B as ~s",
-                                      [node(), Pid, Service, IslandNo, Role]),
+                ?LOG_INFO("node ~s pid ~p joined service ~s island ~B as ~s", [node(), Pid, Service, IslandNo, Role]),
                 yes
             catch
                 _:Pg2Err ->
@@ -75,8 +76,7 @@ unregister_name({Service, IslandNo, Role}=Group) ->
     Pid = whereis(Service),
     pg2:leave(Group, Pid),
     catch unregister(Service),
-    error_logger:info_msg("node ~s pid ~p left service ~s island ~B as ~s",
-                          [node(), Pid, Service, IslandNo, Role]),
+    ?LOG_INFO("node ~s pid ~p left service ~s island ~B as ~s", [node(), Pid, Service, IslandNo, Role]),
     ok.
 
 -spec whereis_name(Island :: island_name()) -> pid() | undefined;

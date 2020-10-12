@@ -2,6 +2,8 @@
 
 -behaviour(gen_server).
 
+-include_lib("kernel/include/logger.hrl").
+
 -define(PING_INTERVAL, 60000).
 
 %% api
@@ -37,7 +39,7 @@ start_link() ->
 
 init([]) ->
     case net_adm:host_file() of
-        {error, enoent} -> error_logger:warning_report("~/.hosts.erlang file is missing");
+        {error, enoent} -> ?LOG_WARNING("~~/.hosts.erlang file is missing", []);
 	_ -> ok
     end,
     State = do_ping(#state{}),
@@ -72,7 +74,7 @@ do_ping(State) ->
     catch
 	exit:{error, enoent} -> ok;
 	exit:{error, HostsErr} ->
-            error_logger:warning_report({"~/.hosts.erlang file error!!!", HostsErr})
+            ?LOG_WARNING("error reading ~~/.hosts.erlang: ~p", [HostsErr])
     end,
     State#state{last_ping = erlang:monotonic_time(millisecond)}.
 
