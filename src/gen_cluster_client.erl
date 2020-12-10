@@ -56,8 +56,8 @@ register_name({Service, IslandNo, Role}=Group, Pid) ->
     try register(Service, Pid) of
         true ->
             try
-                ok = pg2:create(Group),
-                ok = pg2:join(Group, Pid),
+                ok = pg:create(Group),
+                ok = pg:join(Group, Pid),
                 ?LOG_INFO("node ~s pid ~p joined service ~s island ~B as ~s", [node(), Pid, Service, IslandNo, Role]),
                 yes
             catch
@@ -74,7 +74,7 @@ register_name({Service, IslandNo, Role}=Group, Pid) ->
 unregister_name({Service, IslandNo, Role}=Group) ->
     %% try our best to leave, but pg2 will auto-remove this process when it exits anyway
     Pid = whereis(Service),
-    pg2:leave(Group, Pid),
+    pg:leave(Group, Pid),
     catch unregister(Service),
     ?LOG_INFO("node ~s pid ~p left service ~s island ~B as ~s", [node(), Pid, Service, IslandNo, Role]),
     ok.
@@ -82,11 +82,11 @@ unregister_name({Service, IslandNo, Role}=Group) ->
 -spec whereis_name(Island :: island_name()) -> pid() | undefined;
                   (Group :: group_name()) -> pid() | undefined.
 whereis_name({Service, IslandNo}) ->
-    case pg2:get_members({Service, IslandNo, primary}) of
+    case pg:get_members({Service, IslandNo, primary}) of
         [_|_]=Pids ->
             get_closest_pid(Pids);
         _ ->
-            case pg2:get_members({Service, IslandNo, fallback}) of
+            case pg:get_members({Service, IslandNo, fallback}) of
                 [_|_]=Pids ->
                     get_closest_pid(Pids);
                 _ ->
@@ -94,7 +94,7 @@ whereis_name({Service, IslandNo}) ->
             end
     end;
 whereis_name({_, _, _}=Group) ->
-    case pg2:get_members(Group) of
+    case pg:get_members(Group) of
         [_|_]=Pids ->
             get_closest_pid(Pids);
         _ ->
