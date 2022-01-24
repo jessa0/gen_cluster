@@ -1,6 +1,8 @@
 -module(gen_cluster_mnesia).
 
 -export([write/3,
+         write_new/3,
+         write_new_activity/2,
          read/3,
          delete/3,
          select/2,
@@ -22,6 +24,22 @@
       Res :: ok.
 write(Tab, Record, AccessContext) ->
     mnesia:activity(AccessContext, fun mnesia:write/3, [Tab, Record, write], mnesia_frag).
+
+-spec write_new(Tab :: atom(),
+                Record :: tuple(),
+                AccessContext :: access_context()) -> Res when
+      Res :: ok | {error, already_exists}.
+write_new(Tab, Record, AccessContext) ->
+    mnesia:activity(AccessContext, fun ?MODULE:write_new_activity/2, [Tab, Record], mnesia_frag).
+
+-spec write_new_activity(Tab :: atom(),
+                         Record :: tuple()) -> Res when
+      Res :: ok | {error, already_exists}.
+write_new_activity(Tab, Record) ->
+    case mnesia:read(Tab, element(2, Record), sticky_write) of
+        [] -> mnesia:write(Tab, Record, sticky_write);
+        _  -> {error, already_exists}
+    end.
 
 -spec read(Tab :: atom(),
            Key :: any(),
