@@ -23,6 +23,6 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    Mods = [gen_cluster_beacon],
+    Mods = [gen_cluster_beacon, gen_cluster_pg],
     ChildSpecs = [Mod:child_spec() || Mod <- Mods],
     {ok, { {one_for_one, 5, 1}, ChildSpecs} }.
