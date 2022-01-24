@@ -2,9 +2,6 @@
 
 -include_lib("kernel/include/logger.hrl").
 
-%% public api: gen_server equivalents without monitors
--export([call/2, call/3, cast/2]).
-
 %% OTP gen_* process registry callbacks
 -export([register_name/2, unregister_name/1, whereis_name/1, send/2]).
 
@@ -13,39 +10,6 @@
 -type island_name() :: {Service :: service_name(), IslandNo :: pos_integer()}.
 -type group_name() :: {Service :: service_name(), IslandNo :: pos_integer(), Role :: role()}.
 -export_type([role/0, service_name/0, island_name/0, group_name/0]).
-
--define(DEFAULT_TIMEOUT, 5000).
-
-%%
-%% public api: gen_server equivalents without monitors
-%%
-
--spec call(ToIsland :: island_name(), Msg :: any()) -> Reply :: any().
-call(ToIsland, Msg) ->
-    call(ToIsland, Msg, ?DEFAULT_TIMEOUT).
-
--spec call(ToIsland, Msg, TimeoutMs) -> Reply :: any() when
-      ToIsland :: island_name(),
-      Msg :: any(),
-      TimeoutMs :: non_neg_integer().
-call(ToIsland, Msg, Timeout) ->
-    Tag = make_ref(),
-    case whereis_name(ToIsland) of
-	Pid when is_pid(Pid) ->
-	    Pid ! {'$gen_call', {self(), Tag}, Msg};
-	undefined ->
-	    exit({noproc, {?MODULE, call, [ToIsland, Msg]}})
-    end,
-    receive
-        {Tag, Reply} ->
-            Reply
-    after Timeout ->
-            exit({timeout, {?MODULE, call, [ToIsland, Msg]}})
-    end.
-
--spec cast(ToIsland :: island_name(), Msg :: any()) -> ok.
-cast(ToIsland, Msg) ->
-    gen_server:cast({via, ?MODULE, ToIsland}, Msg).
 
 %%
 %% OTP gen_* process registry callbacks
