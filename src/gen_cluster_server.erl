@@ -1,15 +1,15 @@
 -module(gen_cluster_server).
 -behaviour(gen_server).
 
--callback init(Arg :: any(), Group :: gen_client:group_name()) -> {ok, NewState :: any()}.
+-callback init(Arg :: any(), Group :: gen_cluster_client:group_name()) -> {ok, NewState :: any()}.
 
--callback dispatch_call(Request :: any(), From :: any(), Group :: gen_client:group_name(), State :: any()) ->
+-callback dispatch_call(Request :: any(), From :: any(), Group :: gen_cluster_client:group_name(), State :: any()) ->
     {noreply, NewState :: any()} |
     {reply, Reply :: any(), NewState :: any()}.
 
--callback dispatch_cast(Msg :: any(), Group :: gen_client:group_name(), State :: any()) -> {noreply, NewState :: any()}.
+-callback dispatch_cast(Msg :: any(), Group :: gen_cluster_client:group_name(), State :: any()) -> {noreply, NewState :: any()}.
 
--callback terminate(Group :: gen_client:group_name(), State :: any()) -> _Ignore.
+-callback terminate(Group :: gen_cluster_client:group_name(), State :: any()) -> _Ignore.
 
 -optional_callbacks([terminate/2]).
 
@@ -32,7 +32,7 @@
 %% public api
 %%
 
--spec start_link(Name :: gen_cluster_client:group_name(),
+-spec start_link(Name :: gen_cluster_client:service_name(),
                  Mod :: atom(),
                  Arg :: any(),
                  Opts :: [{atom(), any()}] | opts()) -> Res when
