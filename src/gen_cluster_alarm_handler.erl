@@ -42,14 +42,14 @@ handle_event({set_alarm, {system_memory_high_watermark, []}}, State) ->
     TotalMB = Total div (1024*1024),
     AllocMB = Alloc div (1024*1024),
     AllocPct = round((Alloc / Total) * 100),
-    ?LOG_WARNING("system high memory usage: ~BMB/~BMB (~B%)", [TotalMB, AllocMB, AllocPct]),
+    ?LOG_WARNING("system high memory usage: ~BMB/~BMB (~B%)", [AllocMB, TotalMB, AllocPct]),
     {ok, State};
 handle_event({set_alarm, {process_memory_high_watermark, Pid}}, State) ->
     {Total, _Alloc, Worst} = memsup:get_memory_data(),
     TotalMB = Total div (1024*1024),
     WorstMB = Worst div (1024*1024),
     WorstPct = round((Worst / Total) * 100),
-    ?LOG_WARNING("process high memory usage: ~p: ~BMB/~BMB (~B%)", [Pid, TotalMB, WorstMB, WorstPct]),
+    ?LOG_WARNING("process high memory usage: ~p: ~BMB/~BMB (~B%)", [Pid, WorstMB, TotalMB, WorstPct]),
     {ok, State};
 
 %%
@@ -61,7 +61,7 @@ handle_event({set_alarm, {{disk_almost_full, MountedOn}, []}}, State) ->
         {MountedOn, TotalKB, UsedPct} ->
             TotalMB = TotalKB div 1024,
             UsedMB = TotalKB * UsedPct div (100 * 1024),
-            ?LOG_WARNING("disk almost full: ~s: ~BMB/~BMB (~B%)", [MountedOn, TotalMB, UsedMB, UsedPct]);
+            ?LOG_WARNING("disk almost full: ~s: ~BMB/~BMB (~B%)", [MountedOn, UsedMB, TotalMB, UsedPct]);
         false ->
             ?LOG_WARNING("disk almost full: ~s", [MountedOn])
     end,
@@ -113,7 +113,7 @@ handle_info({nodeup, _Node, _InfoList}, State) ->
 handle_info({nodedown, Node, InfoList}, State) ->
     case lists:keyfind(nodedown_reason, 1, InfoList) of
         {nodedown_reason, Reason} ->
-            ?LOG_WARNING("nodedown ~p: ~p", [Node, Reason]);
+            ?LOG_INFO("nodedown ~p: ~p", [Node, Reason]);
         false ->
             ok
     end,
